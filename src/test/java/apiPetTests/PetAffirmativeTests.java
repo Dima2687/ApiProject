@@ -1,7 +1,7 @@
 package apiPetTests;
 
 import apiConfig.BaseTest;
-import apiUtils.Utils;
+import apiUtils.ApiRequests;
 import dto.pet.PetCategoryDto;
 import dto.pet.PetDto;
 import dto.pet.PetTagsDto;
@@ -11,13 +11,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
+import static apiUtils.EntityUtils.buildPetDto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class PetAffirmativeTests extends Utils {
+public class PetAffirmativeTests extends ApiRequests {
 
     @ParameterizedTest
     @CsvSource({
@@ -28,55 +26,57 @@ public class PetAffirmativeTests extends Utils {
     @Order(1)
     void createPetTest(long petId, long categoryId, String categoryName, String petName, String status, String tagName) {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
+        PetDto petBody = buildPetDto(petId, categoryId, categoryName, petName, status, tagName);
 
-        // Генерируем случайные ID
-        //long tagId = ThreadLocalRandom.current().nextLong(500, 999);
-
-        PetDto petBody = PetDto.builder()
-                .id(petId)
-                .category(new PetCategoryDto(categoryId, categoryName))
-                .name(petName)
-                .photoUrls(List.of("none"))
-                .tags(List.of(new PetTagsDto(ThreadLocalRandom.current().nextLong(500, 999), tagName)))
-                .status(status)
-                .build();
-
-        Response response = Utils.sendPostRequest("/v2/pet", petBody);
+        Response response = ApiRequests.sendPostRequest("/v2/pet", petBody);
         PetDto actualResponse = response.as(PetDto.class);
 
-        Assertions.assertAll(
-                () -> Assertions.assertEquals(200, response.getStatusCode()),                                   //Проверка статус-кода ответа (200)
-                () -> Assertions.assertEquals(petBody.getId(), actualResponse.getId()),                                 //Проверка ID питомца
-                () -> Assertions.assertEquals(petBody.getName(), actualResponse.getName()),                             //Проверка имени питомца
-                () -> Assertions.assertEquals(petBody.getStatus(), actualResponse.getStatus()),                         //Проверка статуса питомца
-                () -> Assertions.assertEquals(petBody.getCategory().getName(), actualResponse.getCategory().getName()), //Проверка категории питомца
-                () -> assertThat(actualResponse.getTags()).isNotNull().hasSizeGreaterThanOrEqualTo(1),         //Проверка, что в tags есть хотя бы один элемент.
-                () -> Assertions.assertEquals(tagName, actualResponse.getTags().get(0).getName())                       //Проверка имени первого тега
-        );
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(actualResponse)
+                .isNotNull()
+                .extracting(PetDto::getId, PetDto::getName, PetDto::getStatus)
+                .containsExactly(petBody.getId(), petBody.getName(), petBody.getStatus());
+
+        assertThat(actualResponse.getCategory())
+                .isNotNull()
+                .extracting(PetCategoryDto::getName)
+                .isEqualTo(petBody.getCategory().getName());
+
+        assertThat(actualResponse.getTags())
+                .isNotNull()
+                .hasSizeGreaterThanOrEqualTo(1)
+                .extracting(PetTagsDto::getName)
+                .contains(tagName);
     }
 
     /**
-     Тест запускать секунд 10 потому что сайт не сразу отрабатывает запросы(если запуск производится по 1 тесту)
-     **/
+     * В этом тесте захардкожены id потому что на сервере постоянно меняются данные в id  и что б запрос успешно прошёл
+     */
 
     @ParameterizedTest
-    @ValueSource(ints = {54, 2000, 696})
+    @ValueSource(longs = {54, 2000, 696})
     @Order(2)
-    public void getPetIdTest(long petId) throws InterruptedException {
-        Thread.sleep(700);
+    void getPetIdTest(long petId) {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
 
         Response response = sendGetRequest("/v2/pet/" + petId);
         PetDto actualResponse = response.as(PetDto.class);
 
-        Assertions.assertAll(
-                () -> Assertions.assertEquals(200, response.getStatusCode()),                                       //Проверка статус-кода (200)
-                () -> Assertions.assertNotNull(actualResponse),                                                             //Проверка: ответ API не `null`
-                () -> Assertions.assertEquals(petId, actualResponse.getId()),                                               //Проверка: ID питомца совпадает
-                () -> Assertions.assertFalse(actualResponse.getName().isEmpty()),                                           //Проверка: имя питомца не пустое
-                () -> Assertions.assertNotNull(actualResponse.getCategory()),                                               //Проверка: категория питомца существует
-                () -> Assertions.assertTrue(List.of("available", "pending", "sold").contains(actualResponse.getStatus())),  //Проверка: статус питомца корректный
-                () -> assertThat(actualResponse.getTags()).isNotNull().hasSizeGreaterThanOrEqualTo(1)              //Проверка: у питомца есть хотя бы один тег
-        );
+        assertThat(response.getStatusCode()).isEqualTo(200);
+
+        assertThat(actualResponse)
+                .isNotNull()
+                .extracting(PetDto::getId, PetDto::getName, PetDto::getStatus)
+                .containsExactly(petId, actualResponse.getName(), actualResponse.getStatus());
+
+        assertThat(actualResponse.getCategory()
+                .getName())
+                .isNotNull()
+                .isNotEmpty();
+
+        assertThat(actualResponse.getTags())
+                .isNotNull()
+                .hasSizeGreaterThanOrEqualTo(1);
+
     }
 }

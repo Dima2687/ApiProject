@@ -1,14 +1,14 @@
 package apiUtils;
 
-import apiConfig.BaseTest;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
-public class Utils {
+import static io.restassured.RestAssured.given;
+
+public class ApiRequests {
 
     public static <T> Response sendPostRequest(String endpoint, T body) {
-        return RestAssured.given()
+        return given()
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
                 .body(body)
@@ -19,7 +19,7 @@ public class Utils {
     }
 
     public static Response sendGetRequest(String endpoint) {
-        return RestAssured.given()
+        return given()
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
                 .get(endpoint)
@@ -28,10 +28,8 @@ public class Utils {
                 .extract().response();
     }
 
-    public static Response DeleteRequest(String endpoint) {
-        return RestAssured
-                .given()
-                .spec(BaseTest.requestSpec(BaseTest.get("base.url")))
+    public static Response sendDeleteRequest(String endpoint) {
+        return given()
                 .when()
                 .delete(endpoint)
                 .then()

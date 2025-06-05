@@ -1,21 +1,16 @@
 package apiStoreTests;
 
 import apiConfig.BaseTest;
+import apiUtils.ApiRequests;
 import dto.store.OrderDto;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.ThreadLocalRandom;
+import static apiUtils.EntityUtils.buildOrderDto;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static apiUtils.Utils.DeleteRequest;
-import static apiUtils.Utils.sendPostRequest;
-
-public class StoreNegativeTests {
+public class StoreNegativeTests extends ApiRequests {
     /**
      * В этом тесте на сервере бага, они все проходят и приходит 200, вместо того, что бы выкинуть 400, сервер принимает некорректные данные.
      */
@@ -31,18 +26,13 @@ public class StoreNegativeTests {
     void createInvalidOrderTest(Long id, int quantity, String status, Boolean complete, int expectedStatus, String message) {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
 
-        OrderDto orderBody = OrderDto.builder()
-                .id(id)
-                .petId(ThreadLocalRandom.current().nextLong(500, 9999))
-                .quantity(quantity)
-                .shipDate(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                .status(status)
-                .complete(complete)
-                .build();
+        OrderDto orderBody = buildOrderDto(id, quantity, status, complete);
 
         Response response = sendPostRequest("/v2/store/order", orderBody);
 
-        Assertions.assertEquals(expectedStatus, response.getStatusCode(), message);
+        assertThat(response.getStatusCode()).isEqualTo(expectedStatus);
+        assertThat(message).isNotBlank();
+
     }
 
     @ParameterizedTest
@@ -54,7 +44,9 @@ public class StoreNegativeTests {
     void deleteInvalidOrderTest(String id, int expectedStatus, String message) {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
 
-        Response deleteResponse = DeleteRequest("/v2/store/order/" + id);
-        Assertions.assertEquals(expectedStatus, deleteResponse.getStatusCode(), message);
+        Response deleteResponse = sendDeleteRequest("/v2/store/order/" + id);
+
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(expectedStatus);
+        assertThat(message).isNotBlank();
     }
 }
