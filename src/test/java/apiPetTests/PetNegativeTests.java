@@ -17,8 +17,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
 
-import static apiUtils.PetUtils.sendGetRequest;
-import static apiUtils.PetUtils.sendPostRequest;
+import static apiUtils.Utils.sendGetRequest;
+import static apiUtils.Utils.sendPostRequest;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class PetNegativeTests extends BaseTest {
@@ -53,10 +53,10 @@ public class PetNegativeTests extends BaseTest {
     void postInvalidPetTest(String petId) {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
         try {
-            long parsedPetId = Long.parseLong(petId); // Преобразуем строку в число
+            //long parsedPetId = Long.parseLong(petId); // Преобразуем строку в число
 
             PetDto petBody = PetDto.builder()
-                    .id(parsedPetId)
+                    .id(Long.parseLong(petId))
                     .category(new PetCategoryDto(1L, "ErrorName"))
                     .name("unknown")
                     .photoUrls(List.of("none"))
@@ -75,7 +75,7 @@ public class PetNegativeTests extends BaseTest {
                     () -> Assertions.assertEquals(404, getResponse.getStatusCode()),                      //Проверка: статус-код POST-запроса (404)
                     () -> Assertions.assertEquals("error", actualResponseE.getType()),                    //Проверка: тип ошибки совпадает ('error')
                     () -> Assertions.assertEquals("Pet not found", actualResponseE.getMessage()),         //Проверка: сообщение ошибки корректное ('Pet not found')
-                    () -> Assertions.assertFalse(actualResponse.getTags().isEmpty())
+                    () -> Assertions.assertFalse(actualResponse.getTags().isEmpty())                               //Проверка: питомец содержит хотя бы один тег
             );
 
         } catch (NumberFormatException e) {

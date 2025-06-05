@@ -1,10 +1,11 @@
 package apiUtils;
 
+import apiConfig.BaseTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
-public class PetUtils {
+public class Utils {
 
     public static <T> Response sendPostRequest(String endpoint, T body) {
         return RestAssured.given()
@@ -25,5 +26,16 @@ public class PetUtils {
                 .then()
                 .log().all()
                 .extract().response();
+    }
+
+    public static Response DeleteRequest(String endpoint) {
+        return RestAssured
+                .given()
+                .spec(BaseTest.requestSpec(BaseTest.get("base.url")))
+                .when()
+                .delete(endpoint)
+                .then()
+                .extract()
+                .response();
     }
 }

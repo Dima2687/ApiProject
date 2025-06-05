@@ -1,7 +1,7 @@
 package apiPetTests;
 
 import apiConfig.BaseTest;
-import apiUtils.PetUtils;
+import apiUtils.Utils;
 import dto.pet.PetCategoryDto;
 import dto.pet.PetDto;
 import dto.pet.PetTagsDto;
@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class PetAffirmativeTests extends PetUtils {
+public class PetAffirmativeTests extends Utils {
 
     @ParameterizedTest
     @CsvSource({
@@ -29,18 +30,18 @@ public class PetAffirmativeTests extends PetUtils {
         BaseTest.installSpec(BaseTest.requestSpec(BaseTest.get("base.url")), BaseTest.responseSpec());
 
         // Генерируем случайные ID
-        long tagId = ThreadLocalRandom.current().nextLong(500, 999);
+        //long tagId = ThreadLocalRandom.current().nextLong(500, 999);
 
         PetDto petBody = PetDto.builder()
                 .id(petId)
                 .category(new PetCategoryDto(categoryId, categoryName))
                 .name(petName)
                 .photoUrls(List.of("none"))
-                .tags(List.of(new PetTagsDto(tagId, tagName)))
+                .tags(List.of(new PetTagsDto(ThreadLocalRandom.current().nextLong(500, 999), tagName)))
                 .status(status)
                 .build();
 
-        Response response = PetUtils.sendPostRequest("/v2/pet", petBody);
+        Response response = Utils.sendPostRequest("/v2/pet", petBody);
         PetDto actualResponse = response.as(PetDto.class);
 
         Assertions.assertAll(
@@ -54,6 +55,10 @@ public class PetAffirmativeTests extends PetUtils {
         );
     }
 
+    /**
+     Тест запускать секунд 10 потому что сайт не сразу отрабатывает запросы(если запуск производится по 1 тесту)
+     **/
+
     @ParameterizedTest
     @ValueSource(ints = {54, 2000, 696})
     @Order(2)
@@ -66,7 +71,7 @@ public class PetAffirmativeTests extends PetUtils {
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(200, response.getStatusCode()),                                       //Проверка статус-кода (200)
-                () -> Assertions.assertNotNull(actualResponse),                                                              //Проверка: ответ API не `null`
+                () -> Assertions.assertNotNull(actualResponse),                                                             //Проверка: ответ API не `null`
                 () -> Assertions.assertEquals(petId, actualResponse.getId()),                                               //Проверка: ID питомца совпадает
                 () -> Assertions.assertFalse(actualResponse.getName().isEmpty()),                                           //Проверка: имя питомца не пустое
                 () -> Assertions.assertNotNull(actualResponse.getCategory()),                                               //Проверка: категория питомца существует
